@@ -1,0 +1,83 @@
+{% extends "wiki_base.html" %}
+
+{% block title %}Admission Pass — {{ guest.student_name }} — EventPass{% endblock %}
+
+{% block content %}
+<div style="max-width: 620px; margin: 30px auto;">
+
+    <!-- Status Strip -->
+    <div class="card-box" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.4px;">Admission Pass Status</div>
+            {% if guest.attendance_status == 'Present' %}
+                <div style="font-size: 16px; font-weight: 700; color: #047857; margin-top: 2px;">
+                    <i class="fa-solid fa-check-circle"></i> Admitted (Checked In at Gate)
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted);">Recorded on {{ guest.scan_time }} &bull; {{ guest.gate_number }}</div>
+            {% else %}
+                <div style="font-size: 16px; font-weight: 700; color: #2563eb; margin-top: 2px;">
+                    <i class="fa-solid fa-ticket"></i> Valid for Single Gate Entry
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted);">Present this QR pass on your phone screen at the venue gate</div>
+            {% endif %}
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+            {% if guest.qr_image_path %}
+            <a href="{{ url_for('static', filename=guest.qr_image_path) }}" download class="btn-clean btn-primary-clean" style="font-size: 13px;">
+                <i class="fa-solid fa-download" style="font-size: 12px;"></i> Download
+            </a>
+            {% endif %}
+            <button onclick="window.print()" class="btn-clean" style="font-size: 13px;">
+                <i class="fa-solid fa-print" style="font-size: 12px;"></i> Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Pass Graphic -->
+    {% if guest.qr_image_path %}
+    <div class="card-box" style="padding: 16px; text-align: center; margin-bottom: 20px;">
+        <img src="{{ url_for('static', filename=guest.qr_image_path) }}" alt="QR Ticket Pass" style="max-width: 100%; height: auto; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+    </div>
+    {% endif %}
+
+    <!-- Pass Details Table -->
+    <div class="card-box" style="padding: 0; overflow: hidden; margin-bottom: 20px;">
+        <table class="table-clean" style="margin: 0;">
+            <tr>
+                <td style="width: 35%; color: var(--text-muted); font-weight: 500;">Event</td>
+                <td style="font-weight: 600; color: var(--text-heading);">{{ guest.event_title }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-muted); font-weight: 500;">Date & Time</td>
+                <td>{{ guest.event_date }} at {{ guest.event_time }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-muted); font-weight: 500;">Venue</td>
+                <td>{{ guest.venue }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-muted); font-weight: 500;">Attendee Name</td>
+                <td style="font-weight: 600;">{{ guest.student_name }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-muted); font-weight: 500;">University Roll No</td>
+                <td><code>{{ guest.student_roll or 'N/A' }}</code></td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-muted); font-weight: 500;">Department</td>
+                <td>{{ guest.student_dept }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-muted); font-weight: 500;">Security Token</td>
+                <td style="font-family: monospace; font-size: 12px; color: var(--text-muted);">{{ guest.qr_token }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div style="text-align: center;">
+        <a href="{{ url_for('student_dashboard') }}" class="btn-clean">&larr; Back to My Passes</a>
+    </div>
+
+</div>
+{% endblock %}

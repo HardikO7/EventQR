@@ -1,0 +1,109 @@
+{% extends "wiki_base.html" %}
+
+{% block title %}Organizer Overview — EventPass{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; margin-bottom: 20px; gap: 12px;">
+    <div>
+        <h1 class="page-title">Organizer Control Desk</h1>
+        <p class="page-subtitle" style="margin-bottom: 0;">Publish events, manage participant capacity, monitor waitlists, and check in attendees at venue gates.</p>
+    </div>
+    <a href="{{ url_for('event_create') }}" class="btn-clean btn-primary-clean">
+        + Create New Event
+    </a>
+</div>
+
+<!-- Organizer Scope Banner -->
+<div style="background: #fefce8; border: 1px solid #fef08a; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 24px; font-size: 13px; color: #854d0e; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+    <div>
+        <i class="fa-solid fa-user-tie" style="color: #ca8a04; margin-right: 6px;"></i>
+        <strong>Organizer Section:</strong> Access restricted to managing your created events, reviewing student registration rosters, and conducting gate check-ins. Organizers do not hold attendee tickets for their own events.
+    </div>
+</div>
+
+<!-- Stats row -->
+<div style="display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 28px;">
+    <div class="stat-pill">
+        <div class="stat-label">Events Managed</div>
+        <div class="stat-value">{{ events|length }}</div>
+    </div>
+    <div class="stat-pill">
+        <div class="stat-label">Confirmed Seats</div>
+        <div class="stat-value" style="color: #047857;">{{ total_confirmed }}</div>
+    </div>
+    <div class="stat-pill">
+        <div class="stat-label">Waitlist Queue</div>
+        <div class="stat-value" style="color: #b45309;">{{ total_waitlisted }}</div>
+    </div>
+    <div class="stat-pill">
+        <div class="stat-label">Gate Admissions</div>
+        <div class="stat-value" style="color: #2563eb;">{{ total_present }}</div>
+    </div>
+</div>
+
+<h2 class="section-heading" style="margin-top: 0;">My Events Roster</h2>
+
+{% if events %}
+<div class="card-box" style="padding: 0; overflow: hidden;">
+    <table class="table-clean" style="margin: 0;">
+        <thead>
+            <tr>
+                <th>Event Title</th>
+                <th>Schedule & Location</th>
+                <th>Capacity</th>
+                <th>Confirmed</th>
+                <th>Waitlist</th>
+                <th>Status</th>
+                <th style="text-align: right;">Operations</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in events %}
+            <tr>
+                <td>
+                    <div style="font-weight: 600; font-size: 14.5px; color: var(--text-heading);">
+                        <a href="{{ url_for('event_manage', event_id=e.id) }}">{{ e.title }}</a>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted);">{{ e.department_restriction }}</div>
+                </td>
+                <td style="font-size: 13px; color: var(--text-muted);">
+                    <div>{{ e.event_date }} at {{ e.event_time }}</div>
+                    <div>{{ e.venue }}</div>
+                </td>
+                <td style="font-weight: 600;">{{ e.capacity }}</td>
+                <td style="font-weight: 600; color: #047857;">{{ e.confirmed_count }}</td>
+                <td>
+                    {% if e.waitlist_count > 0 %}
+                        <span class="badge-tag badge-waitlist">{{ e.waitlist_count }} waiting</span>
+                    {% else %}
+                        <span style="color: var(--text-light);">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if e.status == 'approved' %}
+                        <span class="badge-tag badge-open">Approved</span>
+                    {% elif e.status == 'pending' %}
+                        <span class="badge-tag badge-waitlist">Pending Review</span>
+                    {% else %}
+                        <span class="badge-tag badge-danger">Rejected</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: right; white-space: nowrap;">
+                    <a href="{{ url_for('event_manage', event_id=e.id) }}" class="btn-clean" style="padding: 4px 10px; font-size: 12.5px;">
+                        Roster
+                    </a>
+                    <a href="{{ url_for('gate_scanner', event_id=e.id) }}" class="btn-clean btn-primary-clean" style="padding: 4px 10px; font-size: 12.5px; margin-left: 4px;">
+                        <i class="fa-solid fa-camera" style="font-size: 11px;"></i> Scan Gate
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card-box" style="text-align: center; padding: 40px; color: var(--text-muted);">
+    You have not created any events yet. Click <strong>+ Create New Event</strong> above to publish your first campus event.
+</div>
+{% endif %}
+{% endblock %}

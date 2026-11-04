@@ -1,0 +1,228 @@
+{% extends "wiki_base.html" %}
+
+{% block title %}{{ event.title }} — EventPass{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+    <span class="badge-tag badge-neutral" style="margin-bottom: 8px;">{{ event.department_restriction }}</span>
+    <h1 class="page-title">{{ event.title }}</h1>
+    <p class="page-subtitle">Organized by <strong>{{ event.organizer_name }}</strong> &bull; {{ event.organizer_dept }}</p>
+</div>
+
+<div style="display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-start;">
+
+    <!-- Left Main Column (Agenda & Registration) -->
+    <div style="flex: 1; min-width: 320px;">
+        <div class="card-box" style="margin-bottom: 24px;">
+            <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 12px 0; color: var(--text-heading);">About this Event</h3>
+            <p style="font-size: 14.5px; line-height: 1.7; color: var(--text-body); margin: 0;">
+                {{ event.description }}
+            </p>
+        </div>
+
+        <div class="card-box" style="margin-bottom: 24px;">
+            <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 8px 0; color: var(--text-heading);">Eligibility Criteria</h3>
+            <p style="font-size: 14px; color: var(--text-muted); margin: 0;">
+                {% if event.department_restriction == 'All Departments' %}
+                    Open to all registered university students and faculty across all academic departments.
+                {% else %}
+                    Restricted strictly to students and faculty belonging to the <strong>{{ event.department_restriction }}</strong> department.
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Registration Action Block -->
+        <div class="card-box" style="background: #ffffff; border-color: #cbd5e1;">
+            <h3 style="font-size: 17px; font-weight: 600; margin: 0 0 12px 0; color: var(--text-heading);">Event Registration</h3>
+
+            {% if existing_registration %}
+                <!-- Already Registered -->
+                <div class="alert-clean {% if existing_registration.status == 'confirmed' %}alert-success-clean{% else %}alert-warning-clean{% endif %}" style="margin-bottom: 16px;">
+                    {% if existing_registration.status == 'confirmed' %}
+                        <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">You have a Confirmed Seat!</div>
+                        <div>Your digital QR admission pass is ready. Show your pass on your phone screen at the venue gate for check-in.</div>
+                        <div style="margin-top: 12px;">
+                            <a href="{{ url_for('ticket_view', token=existing_registration.qr_token) }}" class="btn-clean btn-primary-clean">
+                                <i class="fa-solid fa-qrcode" style="font-size: 13px;"></i> View Admission Pass &rarr;
+                            </a>
+                        </div>
+                    {% elif existing_registration.status == 'waitlisted' %}
+                        <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">Waitlist Position #{{ existing_registration.waitlist_position }}</div>
+                        <div>You are queued on the waitlist. If an attendee cancels or capacity is increased, your seat will be automatically confirmed.</div>
+                    {% else %}
+                        <div>Your registration was cancelled. You may re-register if seats are open.</div>
+                    {% endif %}
+                </div>
+
+                {% if existing_registration.status in ('confirmed', 'waitlisted') %}
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: 14px;">
+                    <form method="POST" action="{{ url_for('cancel_reg', reg_id=existing_registration.id) }}" onsubmit="return confirm('Cancel this registration? If confirmed, your seat will be promoted to the next waitlisted student.');">
+                        <button type="submit" class="btn-clean btn-danger-clean" style="font-size: 13px; padding: 5px 12px;">
+                            Cancel My Registration
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+            {% else %}
+                <!-- Not Registered Yet -->
+                {% if not session.get('user') %}
+                    <!-- Public Visitor Prompt -->
+                    <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 18px; text-align: center;">
+                        <div style="font-size: 15px; font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Student Event Registration</div>
+                        <p style="margin: 0 0 14px 0; font-size: 13.5px; color: var(--text-muted);">Sign in to your campus account to reserve your admission pass or join the waitlist.</p>
+                        <div style="display: flex; gap: 8px; justify-content: center;">
+                            <a href="{{ url_for('login', next=request.path) }}" class="btn-clean btn-primary-clean" style="font-size: 13.5px;">Sign In to Register</a>
+                            <a href="{{ url_for('register_user') }}" class="btn-clean" style="font-size: 13.5px;">Sign Up</a>
+                        </div>
+                    </div>
+
+                {% elif session['user']['role'] == 'organizer' %}
+                    <!-- Organizer Section Behavior -->
+                    {% if event.organizer_id == session['user']['id'] %}
+                        <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-sm); padding: 20px;">
+                            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #b45309; font-size: 15px; margin-bottom: 6px;">
+                                <i class="fa-solid fa-user-tie"></i> Event Organizer Controls
+                            </div>
+                            <p style="margin: 0 0 16px 0; font-size: 13.5px; color: #92400e; line-height: 1.5;">
+                                <strong>You are the organizer of this event.</strong> Organizers cannot register as attendees for their own event. Use the Organizer Desk to monitor attendee registrations, adjust seating capacity, and scan entry passes at the venue gate.
+                            </p>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <a href="{{ url_for('event_manage', event_id=event.id) }}" class="btn-clean btn-clean-primary" style="font-size: 13px;">
+                                    <i class="fa-solid fa-list-check"></i> View Registrations & Attendees
+                                </a>
+                                <a href="{{ url_for('gate_scanner', event_id=event.id) }}" class="btn-clean btn-clean-secondary" style="font-size: 13px;">
+                                    <i class="fa-solid fa-qrcode"></i> Gate Scanner
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 18px;">
+                            <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">
+                                <i class="fa-solid fa-info-circle" style="color: var(--text-muted);"></i> Organizer Account Notice
+                            </div>
+                            <p style="margin: 0; font-size: 13.5px; color: var(--text-muted); line-height: 1.5;">
+                                You are currently logged in with a faculty/organizer account. Organizers cannot register for student attendee passes. Switch to a student account if you wish to register as an attendee.
+                            </p>
+                        </div>
+                    {% endif %}
+
+                {% elif session['user']['role'] == 'admin' %}
+                    <!-- Administration Section Behavior -->
+                    <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-left: 4px solid #ef4444; border-radius: var(--radius-sm); padding: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                            <div style="font-weight: 700; color: var(--text-heading); font-size: 15px;">
+                                <i class="fa-solid fa-shield-halved" style="color: #ef4444; margin-right: 4px;"></i> Administration Oversight
+                            </div>
+                            {% if event.status == 'approved' %}
+                                <span class="badge-tag badge-success">Approved & Public</span>
+                            {% elif event.status == 'pending' %}
+                                <span class="badge-tag badge-warning">Awaiting Moderation</span>
+                            {% else %}
+                                <span class="badge-tag badge-danger">Rejected</span>
+                            {% endif %}
+                        </div>
+                        <p style="margin: 0 0 16px 0; font-size: 13.5px; color: var(--text-muted); line-height: 1.5;">
+                            Administrators hold system-wide oversight of all university events. You can review attendee registrations, audit gate entries, or moderate event proposals.
+                        </p>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                            <a href="{{ url_for('event_manage', event_id=event.id) }}" class="btn-clean btn-clean-primary" style="font-size: 13px;">
+                                <i class="fa-solid fa-list-check"></i> Manage Registrations ({{ capacity.confirmed }} Confirmed)
+                            </a>
+                            {% if event.status == 'pending' %}
+                                <form method="POST" action="{{ url_for('admin_event_approve', event_id=event.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn-clean btn-clean-success" style="font-size: 13px;">
+                                        <i class="fa-solid fa-check"></i> Approve Event
+                                    </button>
+                                </form>
+                            {% endif %}
+                            <a href="{{ url_for('admin_dashboard') }}" class="btn-clean btn-clean-secondary" style="font-size: 13px;">
+                                Admin Console &rarr;
+                            </a>
+                        </div>
+                    </div>
+
+                {% else %}
+                    <!-- Student Registration Flow -->
+                    {% if not is_eligible %}
+                        <div class="alert-clean alert-danger-clean">
+                            <strong>Eligibility Restriction:</strong> Your registered department is <strong>{{ session['user']['department'] }}</strong>. This event requires enrollment in <strong>{{ event.department_restriction }}</strong>.
+                        </div>
+                    {% else %}
+                        {% if capacity.is_full %}
+                            <div class="alert-clean alert-warning-clean" style="margin-bottom: 16px;">
+                                <strong>Capacity Reached:</strong> All {{ capacity.capacity }} seats are currently taken. Registering now will place you on the waitlist at <strong>Queue #{{ capacity.waitlisted + 1 }}</strong>.
+                            </div>
+                        {% endif %}
+
+                        <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px; font-size: 13.5px;">
+                            <div style="color: var(--text-muted); margin-bottom: 4px;">Registering as:</div>
+                            <div style="font-weight: 600; color: var(--text-heading);">{{ session['user']['name'] }} &bull; {{ session['user']['roll_no'] or 'Student' }} ({{ session['user']['department'] }})</div>
+                            <div style="color: var(--text-muted); font-size: 12.5px; margin-top: 2px;">Pass delivery to: {{ session['user']['email'] }}</div>
+                        </div>
+
+                        <form method="POST" action="{{ url_for('event_register', event_id=event.id) }}">
+                            <button type="submit" class="btn-clean btn-primary-clean" style="padding: 10px 22px; font-size: 14.5px;">
+                                {% if capacity.is_full %}
+                                    <i class="fa-solid fa-clock" style="margin-right: 4px;"></i> Join Waitlist Queue (#{{ capacity.waitlisted + 1 }})
+                                {% else %}
+                                    <i class="fa-solid fa-ticket" style="margin-right: 4px;"></i> Confirm Seat & Generate Entry Pass &rarr;
+                                {% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right Column (Event Details Card) -->
+    <div style="width: 340px; flex-shrink: 0;">
+        <div class="card-box" style="position: sticky; top: 80px;">
+            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 14px;">
+                Event Details
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13.5px;">
+                <div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 2px;">Date & Time</div>
+                    <div style="font-weight: 600; color: var(--text-heading);">{{ event.event_date }}</div>
+                    <div style="color: var(--text-muted);">{{ event.event_time }}</div>
+                </div>
+
+                <div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 2px;">Location</div>
+                    <div style="font-weight: 600; color: var(--text-heading);">{{ event.venue }}</div>
+                </div>
+
+                <div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 2px;">Seat Capacity</div>
+                    <div style="font-weight: 600; color: var(--text-heading);">{{ capacity.capacity }} total seats</div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                        {% if capacity.remaining > 0 %}
+                            <span class="badge-tag badge-open">{{ capacity.remaining }} seats open</span>
+                        {% else %}
+                            <span class="badge-tag badge-waitlist">Full &bull; Waitlist active</span>
+                        {% endif %}
+                        <span style="font-size: 12px; color: var(--text-muted);">{{ capacity.confirmed }} confirmed</span>
+                    </div>
+                </div>
+
+                {% if capacity.waitlisted > 0 %}
+                <div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 2px;">Waitlist</div>
+                    <div style="font-weight: 600; color: #b45309;">{{ capacity.waitlisted }} student(s) in queue</div>
+                </div>
+                {% endif %}
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 2px;">Organizer Contact</div>
+                    <div style="font-weight: 600; color: var(--text-heading);">{{ event.organizer_name }}</div>
+                    <div style="font-size: 12.5px; color: var(--text-muted);">{{ event.organizer_email }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends "wiki_base.html" %}
+
+{% block title %}User Profile — {{ user.name }} — EventQR{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">User Profile</h1>
+    <p class="page-subtitle">Manage your personal university credentials, academic details, and security settings.</p>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 28px; align-items: start;">
+
+    <!-- Left: Profile Details & Password Update -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+
+        <!-- Edit Profile Form -->
+        <div class="card-box" style="padding: 24px;">
+            <h3 style="margin: 0 0 4px 0; font-size: 17px; font-weight: 700; color: var(--text-heading);">
+                Personal & Academic Details
+            </h3>
+            <p style="margin: 0 0 20px 0; font-size: 13px; color: var(--text-muted);">
+                Information used to verify event eligibility and print admission passes.
+            </p>
+
+            <form method="POST" action="{{ url_for('profile') }}">
+                <div class="form-group-clean">
+                    <label class="label-clean">Full Name</label>
+                    <input type="text" name="name" class="input-clean" value="{{ user.name }}" required>
+                </div>
+
+                <div class="form-group-clean">
+                    <label class="label-clean">Campus Email Address</label>
+                    <input type="email" class="input-clean" value="{{ user.email }}" disabled style="background: var(--bg-page); color: var(--text-muted); cursor: not-allowed;">
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Email is linked to your OTP authentication. Contact administrator for email changes.</div>
+                </div>
+
+                <div class="form-group-clean">
+                    <label class="label-clean">University Roll / Registration Number</label>
+                    <input type="text" name="roll_no" class="input-clean" value="{{ user.roll_no or '' }}" placeholder="e.g. 25CS101">
+                </div>
+
+                <div class="form-group-clean">
+                    <label class="label-clean">Department</label>
+                    <select name="department" class="select-clean">
+                        <option value="Computer Science" {% if user.department == 'Computer Science' %}selected{% endif %}>Department of Computer Science</option>
+                        <option value="Mechanical Engineering" {% if user.department == 'Mechanical Engineering' %}selected{% endif %}>Mechanical Engineering</option>
+                        <option value="Management Studies" {% if user.department == 'Management Studies' %}selected{% endif %}>Management Studies</option>
+                        <option value="Physics" {% if user.department == 'Physics' %}selected{% endif %}>Physics</option>
+                        <option value="Mathematics" {% if user.department == 'Mathematics' %}selected{% endif %}>Mathematics</option>
+                    </select>
+                </div>
+
+                <div class="form-group-clean">
+                    <label class="label-clean">Contact Phone Number</label>
+                    <input type="tel" name="phone" class="input-clean" value="{{ user.phone or '' }}" placeholder="+91 98765 43210">
+                </div>
+
+                <div style="margin-top: 24px;">
+                    <button type="submit" class="btn-clean btn-clean-primary">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Profile Details
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Change Password Form -->
+        <div class="card-box" style="padding: 24px;">
+            <h3 style="margin: 0 0 4px 0; font-size: 17px; font-weight: 700; color: var(--text-heading);">
+                Change Password
+            </h3>
+            <p style="margin: 0 0 20px 0; font-size: 13px; color: var(--text-muted);">
+                Update your account password. If you log in via Email OTP, you can also use this for traditional password entry.
+            </p>
+
+            <form method="POST" action="{{ url_for('change_password') }}">
+                <div class="form-group-clean">
+                    <label class="label-clean">Current Password</label>
+                    <input type="password" name="current_password" class="input-clean" required placeholder="••••••••">
+                </div>
+                <div class="form-group-clean">
+                    <label class="label-clean">New Password</label>
+                    <input type="password" name="new_password" class="input-clean" required minlength="6" placeholder="Minimum 6 characters">
+                </div>
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="btn-clean btn-clean-secondary">
+                        <i class="fa-solid fa-key"></i> Update Password
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Right: Member Profile Card -->
+    <div>
+        <div class="card-box" style="padding: 24px;">
+            <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 20px;">
+                <div style="width: 72px; height: 72px; border-radius: 50%; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; margin: 0 auto 12px auto; border: 2px solid #bfdbfe;">
+                    {{ user.name[:1]|upper }}
+                </div>
+                <h3 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 700; color: var(--text-heading);">{{ user.name }}</h3>
+                <div style="font-size: 13px; color: var(--text-muted);">{{ user.email }}</div>
+                <div style="margin-top: 8px;">
+                    {% if user.role == 'admin' %}
+                        <span class="badge-tag badge-danger"><i class="fa-solid fa-shield-halved"></i> Administrator</span>
+                    {% elif user.role == 'organizer' %}
+                        <span class="badge-tag badge-warning"><i class="fa-solid fa-calendar-check"></i> Faculty / Organizer</span>
+                    {% else %}
+                        <span class="badge-tag badge-neutral"><i class="fa-solid fa-graduation-cap"></i> Student Member</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13.5px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-muted);">Account Status</span>
+                    {% if user.is_active %}
+                        <span class="badge-tag badge-success">Active</span>
+                    {% else %}
+                        <span class="badge-tag badge-danger">Suspended</span>
+                    {% endif %}
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-muted);">Email OTP Verified</span>
+                    {% if user.is_verified %}
+                        <span style="color: #047857; font-weight: 600; font-size: 12.5px;"><i class="fa-solid fa-check"></i> Verified</span>
+                    {% else %}
+                        <span style="color: #b45309; font-weight: 600; font-size: 12.5px;">Pending</span>
+                    {% endif %}
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-muted);">Roll Number</span>
+                    <span style="font-family: monospace; font-weight: 600; color: var(--text-heading);">{{ user.roll_no or '—' }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-muted);">Department</span>
+                    <span style="font-weight: 500; color: var(--text-heading); text-align: right;">{{ user.department or '—' }}</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 8px;">
+                {% if user.role == 'student' %}
+                    <a href="{{ url_for('student_dashboard') }}" class="btn-clean btn-clean-primary" style="width: 100%; justify-content: center; font-size: 13px;">
+                        <i class="fa-solid fa-ticket"></i> View My Event Passes
+                    </a>
+                    <a href="{{ url_for('events_list') }}" class="btn-clean btn-clean-secondary" style="width: 100%; justify-content: center; font-size: 13px;">
+                        <i class="fa-solid fa-compass"></i> Explore Campus Events
+                    </a>
+                {% elif user.role == 'organizer' %}
+                    <a href="{{ url_for('organizer_dashboard') }}" class="btn-clean btn-clean-primary" style="width: 100%; justify-content: center; font-size: 13px;">
+                        <i class="fa-solid fa-user-tie"></i> Organizer Desk & Registrations
+                    </a>
+                    <a href="{{ url_for('event_create') }}" class="btn-clean btn-clean-secondary" style="width: 100%; justify-content: center; font-size: 13px;">
+                        <i class="fa-solid fa-plus"></i> Create New Event
+                    </a>
+                    <a href="{{ url_for('gate_scanner') }}" class="btn-clean btn-clean-secondary" style="width: 100%; justify-content: center; font-size: 13px;">
+                        <i class="fa-solid fa-qrcode"></i> Gate Checkpoint Scanner
+                    </a>
+                {% elif user.role == 'admin' %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn-clean btn-clean-primary" style="width: 100%; justify-content: center; font-size: 13px;">
+                        <i class="fa-solid fa-shield-halved"></i> University Admin Console
+                    </a>
+                    <a href="{{ url_for('admin_approvals') }}" class="btn-clean btn-clean-secondary" style="width: 100%; justify-content: center; font-size: 13px;">
+                        <i class="fa-solid fa-clock"></i> Event Approvals Queue
+                    </a>
+                    <a href="{{ url_for('admin_users') }}" class="btn-clean btn-clean-secondary" style="width: 100%; justify-content: center; font-size: 13px;">
+                        <i class="fa-solid fa-users"></i> User Directory & Permissions
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

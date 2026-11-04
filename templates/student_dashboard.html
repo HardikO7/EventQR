@@ -1,0 +1,120 @@
+{% extends "wiki_base.html" %}
+
+{% block title %}My Passes & Registrations — EventPass{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; margin-bottom: 20px; gap: 12px;">
+    <div>
+        <h1 class="page-title">My Event Passes</h1>
+        <p class="page-subtitle" style="margin-bottom: 0;">Track your confirmed campus admission passes, check gate entry status, and manage waitlists.</p>
+    </div>
+    <a href="{{ url_for('events_list') }}" class="btn-clean btn-primary-clean">
+        <i class="fa-solid fa-compass" style="font-size: 12px;"></i> Explore Campus Events
+    </a>
+</div>
+
+<!-- Student Scope Banner -->
+<div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 24px; font-size: 13px; color: #1e40af; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+    <div>
+        <i class="fa-solid fa-graduation-cap" style="color: #2563eb; margin-right: 6px;"></i>
+        <strong>Student Portal:</strong> View your confirmed QR admission passes, join waitlist queues, and present your digital tickets at venue entrance checkpoints.
+    </div>
+</div>
+
+<!-- Stats Bar -->
+    <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-top: 18px;">
+        <div class="stat-pill">
+            <div class="stat-label">Confirmed Passes</div>
+            <div class="stat-value" style="color: #047857;">{{ confirmed_count }}</div>
+        </div>
+        <div class="stat-pill">
+            <div class="stat-label">Waitlist Position</div>
+            <div class="stat-value" style="color: #b45309;">{{ waitlist_count }}</div>
+        </div>
+        <div class="stat-pill">
+            <div class="stat-label">Attended at Gate</div>
+            <div class="stat-value" style="color: #2563eb;">{{ present_count }}</div>
+        </div>
+        <div class="stat-pill">
+            <div class="stat-label">Total Registered</div>
+            <div class="stat-value">{{ registrations|length }}</div>
+        </div>
+    </div>
+</div>
+
+<h2 class="section-heading" style="margin-top: 0;">My Registrations</h2>
+
+{% if registrations %}
+<div class="card-box" style="padding: 0; overflow: hidden;">
+    <table class="table-clean" style="margin: 0;">
+        <thead>
+            <tr>
+                <th>Event</th>
+                <th>Date & Location</th>
+                <th>Status</th>
+                <th>Gate Check-in</th>
+                <th style="text-align: right;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reg in registrations %}
+            <tr>
+                <td>
+                    <div style="font-weight: 600; font-size: 14.5px; color: var(--text-heading);">
+                        <a href="{{ url_for('event_detail', event_id=reg.event_id) }}">{{ reg.event_title }}</a>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-light);">Registered: {{ reg.created_at[:10] if reg.created_at else '-' }}</div>
+                </td>
+                <td style="font-size: 13px; color: var(--text-muted);">
+                    <div>{{ reg.event_date }} at {{ reg.event_time }}</div>
+                    <div>{{ reg.venue }}</div>
+                </td>
+                <td>
+                    {% if reg.status == 'confirmed' %}
+                        <span class="badge-tag badge-open">Confirmed</span>
+                    {% elif reg.status == 'waitlisted' %}
+                        <span class="badge-tag badge-waitlist">Waitlist #{{ reg.waitlist_position }}</span>
+                    {% else %}
+                        <span class="badge-tag badge-neutral">Cancelled</span>
+                    {% endif %}
+                </td>
+                <td style="font-size: 13px;">
+                    {% if reg.attendance_status == 'Present' %}
+                        <span style="color: #047857; font-weight: 600;">
+                            <i class="fa-solid fa-check-circle" style="margin-right: 4px;"></i> Present
+                        </span>
+                        <div style="font-size: 11.5px; color: var(--text-light);">{{ reg.scan_time[:16] }} ({{ reg.gate_number }})</div>
+                    {% else %}
+                        {% if reg.status == 'confirmed' %}
+                            <span style="color: var(--text-muted);">Pending check-in</span>
+                        {% else %}
+                            <span style="color: var(--text-light);">-</span>
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td style="text-align: right; white-space: nowrap;">
+                    {% if reg.status == 'confirmed' and reg.qr_token %}
+                        <a href="{{ url_for('ticket_view', token=reg.qr_token) }}" class="btn-clean btn-primary-clean" style="padding: 5px 12px; font-size: 12.5px;">
+                            <i class="fa-solid fa-qrcode" style="font-size: 11px;"></i> View Pass
+                        </a>
+                    {% endif %}
+
+                    {% if reg.status in ('confirmed', 'waitlisted') %}
+                        <form method="POST" action="{{ url_for('cancel_reg', reg_id=reg.id) }}" style="display: inline;" onsubmit="return confirm('Cancel this registration? Your seat will be transferred to the waitlist queue.');">
+                            <button type="submit" class="btn-clean btn-danger-clean" style="padding: 5px 10px; font-size: 12px; margin-left: 4px;">
+                                Cancel
+                            </button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card-box" style="text-align: center; padding: 40px; color: var(--text-muted);">
+    You have not registered for any events yet. <a href="{{ url_for('events_list') }}" style="font-weight: 600;">Browse upcoming events</a> to reserve your pass.
+</div>
+{% endif %}
+{% endblock %}

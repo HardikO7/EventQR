@@ -1,0 +1,222 @@
+{% extends "wiki_base.html" %}
+
+{% block title %}Manage: {{ event.title }} — EventPass{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; margin-bottom: 20px; gap: 12px;">
+    <div>
+        <span class="badge-tag badge-neutral" style="margin-bottom: 6px;">{{ event.department_restriction }}</span>
+        <h1 class="page-title">{{ event.title }}</h1>
+        <p class="page-subtitle" style="margin-bottom: 0;">{{ event.event_date }} at {{ event.event_time }} &bull; {{ event.venue }}</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <a href="{{ url_for('gate_scanner', event_id=event.id) }}" class="btn-clean btn-primary-clean" style="font-size: 13px;">
+            <i class="fa-solid fa-camera" style="font-size: 12px;"></i> Gate Scanner
+        </a>
+        <a href="{{ url_for('export_event_pdf', event_id=event.id, report_type='present') }}" class="btn-clean" style="font-size: 13px;">
+            <i class="fa-solid fa-file-pdf" style="color: #b91c1c; font-size: 12px;"></i> PDF
+        </a>
+        <a href="{{ url_for('export_event_excel', event_id=event.id, report_type='full') }}" class="btn-clean" style="font-size: 13px;">
+            <i class="fa-solid fa-file-excel" style="color: #047857; font-size: 12px;"></i> Excel
+        </a>
+    </div>
+</div>
+
+<!-- Stats row -->
+<div style="display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 24px;">
+    <div class="stat-pill">
+        <div class="stat-label">Capacity Limit</div>
+        <div class="stat-value">{{ capacity_stats.capacity }}</div>
+    </div>
+    <div class="stat-pill">
+        <div class="stat-label">Confirmed</div>
+        <div class="stat-value" style="color: #047857;">{{ capacity_stats.confirmed }}</div>
+    </div>
+    <div class="stat-pill">
+        <div class="stat-label">Waitlist</div>
+        <div class="stat-value" style="color: #b45309;">{{ capacity_stats.waitlisted }}</div>
+    </div>
+    <div class="stat-pill">
+        <div class="stat-label">Checked In (Present)</div>
+        <div class="stat-value" style="color: #2563eb;">{{ present_list|length }}</div>
+    </div>
+    <div class="stat-pill">
+        <div class="stat-label">Unchecked (Absent)</div>
+        <div class="stat-value" style="color: #64748b;">{{ absent_list|length }}</div>
+    </div>
+</div>
+
+<!-- Capacity Expansion Bar -->
+<div class="card-box" style="padding: 14px 18px; margin-bottom: 24px; background: #ffffff;">
+    <form method="POST" action="{{ url_for('update_event_capacity', event_id=event.id) }}" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <span style="font-size: 13.5px; font-weight: 600; color: var(--text-heading);">Quick Seat Expansion:</span>
+        <label style="font-size: 13px; color: var(--text-muted);">Capacity:</label>
+        <input type="number" name="capacity" value="{{ event.capacity }}" min="1" max="5000" class="input-clean" style="width: 100px; padding: 5px 8px; font-size: 13.5px;">
+        <button type="submit" class="btn-clean" style="font-size: 13px; padding: 6px 14px;">Update Capacity</button>
+        <span style="font-size: 12.5px; color: var(--text-light);">(Waitlisted students automatically advance to confirmed when seats open)</span>
+    </form>
+</div>
+
+<!-- Navigation Filter Tabs -->
+<div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 16px; padding-bottom: 2px;">
+    <a href="{{ url_for('event_manage', event_id=event.id, tab='confirmed') }}" class="btn-clean {% if active_tab == 'confirmed' %}btn-primary-clean{% endif %}" style="font-size: 13px; padding: 6px 14px;">
+        Confirmed Attendees ({{ confirmed_attendees|length }})
+    </a>
+    <a href="{{ url_for('event_manage', event_id=event.id, tab='waitlist') }}" class="btn-clean {% if active_tab == 'waitlist' %}btn-primary-clean{% endif %}" style="font-size: 13px; padding: 6px 14px;">
+        Waitlist Queue ({{ waitlist_attendees|length }})
+    </a>
+    <a href="{{ url_for('event_manage', event_id=event.id, tab='present') }}" class="btn-clean {% if active_tab == 'present' %}btn-primary-clean{% endif %}" style="font-size: 13px; padding: 6px 14px;">
+        Present at Gate ({{ present_list|length }})
+    </a>
+    <a href="{{ url_for('event_manage', event_id=event.id, tab='absent') }}" class="btn-clean {% if active_tab == 'absent' %}btn-primary-clean{% endif %}" style="font-size: 13px; padding: 6px 14px;">
+        Pending Check-in ({{ absent_list|length }})
+    </a>
+</div>
+
+{% if active_tab == 'waitlist' %}
+    <div class="card-box" style="padding: 0; overflow: hidden;">
+        <table class="table-clean" style="margin: 0;">
+            <thead>
+                <tr>
+                    <th style="width: 90px;">Queue #</th>
+                    <th>Student Name</th>
+                    <th>Roll Number</th>
+                    <th>Department</th>
+                    <th>Email</th>
+                    <th>Enrolled Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if waitlist_attendees %}
+                    {% for w in waitlist_attendees %}
+                    <tr>
+                        <td><span class="badge-tag badge-waitlist">Waitlist #{{ w.waitlist_position }}</span></td>
+                        <td><strong>{{ w.student_name }}</strong></td>
+                        <td><code>{{ w.student_roll or 'N/A' }}</code></td>
+                        <td>{{ w.student_dept }}</td>
+                        <td style="color: var(--text-muted);">{{ w.student_email }}</td>
+                        <td style="color: var(--text-light); font-size: 12px;">{{ w.created_at[:16] if w.created_at else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">No attendees on the waitlist.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+{% elif active_tab == 'present' %}
+    <div class="card-box" style="padding: 0; overflow: hidden;">
+        <table class="table-clean" style="margin: 0;">
+            <thead>
+                <tr>
+                    <th style="width: 40px;">#</th>
+                    <th>Student Name</th>
+                    <th>Roll Number</th>
+                    <th>Department</th>
+                    <th>Gate Check-in Time</th>
+                    <th>Gate Location</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if present_list %}
+                    {% for p in present_list %}
+                    <tr>
+                        <td style="color: var(--text-light);">{{ loop.index }}</td>
+                        <td><strong>{{ p.student_name }}</strong></td>
+                        <td><code>{{ p.student_roll or 'N/A' }}</code></td>
+                        <td>{{ p.student_dept }}</td>
+                        <td style="color: #047857; font-weight: 600;">{{ p.scan_time }}</td>
+                        <td style="color: var(--text-muted);">{{ p.gate_number }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">No attendees scanned at gate yet.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+{% elif active_tab == 'absent' %}
+    <div class="card-box" style="padding: 0; overflow: hidden;">
+        <table class="table-clean" style="margin: 0;">
+            <thead>
+                <tr>
+                    <th style="width: 40px;">#</th>
+                    <th>Student Name</th>
+                    <th>Roll Number</th>
+                    <th>Department</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if absent_list %}
+                    {% for a in absent_list %}
+                    <tr>
+                        <td style="color: var(--text-light);">{{ loop.index }}</td>
+                        <td><strong>{{ a.student_name }}</strong></td>
+                        <td><code>{{ a.student_roll or 'N/A' }}</code></td>
+                        <td>{{ a.student_dept }}</td>
+                        <td style="color: var(--text-muted);">{{ a.student_email }}</td>
+                        <td><span class="badge-tag badge-neutral">Unchecked</span></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">All confirmed attendees have completed gate check-in!</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+{% else %}
+    <div class="card-box" style="padding: 0; overflow: hidden;">
+        <table class="table-clean" style="margin: 0;">
+            <thead>
+                <tr>
+                    <th style="width: 40px;">#</th>
+                    <th>Student Name</th>
+                    <th>Roll Number</th>
+                    <th>Department</th>
+                    <th>Email</th>
+                    <th>Gate Status</th>
+                    <th style="text-align: right;">Pass</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if confirmed_attendees %}
+                    {% for c in confirmed_attendees %}
+                    <tr>
+                        <td style="color: var(--text-light);">{{ loop.index }}</td>
+                        <td><strong>{{ c.student_name }}</strong></td>
+                        <td><code>{{ c.student_roll or 'N/A' }}</code></td>
+                        <td>{{ c.student_dept }}</td>
+                        <td style="color: var(--text-muted); font-size: 13px;">{{ c.student_email }}</td>
+                        <td>
+                            {% if c.attendance_status == 'Present' %}
+                                <span class="badge-tag badge-open">Present</span>
+                            {% else %}
+                                <span class="badge-tag badge-neutral">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right;">
+                            {% if c.qr_token %}
+                            <a href="{{ url_for('ticket_view', token=c.qr_token) }}" target="_blank" class="btn-clean" style="padding: 3px 8px; font-size: 11.5px;">
+                                Pass &rarr;
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">No confirmed attendees yet.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+
+<div style="margin-top: 24px;">
+    <a href="{{ url_for('organizer_dashboard') }}" class="btn-clean">&larr; Back to Organizer Overview</a>
+</div>
+{% endblock %}

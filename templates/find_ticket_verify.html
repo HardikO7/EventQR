@@ -1,0 +1,74 @@
+{% extends "wiki_base.html" %}
+
+{% block title %}Verify Ticket Pass Ownership — EventPass{% endblock %}
+
+{% block content %}
+<div style="max-width: 440px; margin: 40px auto;">
+    <div class="card-box" style="padding: 32px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div style="width: 54px; height: 54px; border-radius: 50%; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 12px auto; border: 1px solid #bfdbfe;">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h1 style="font-size: 22px; font-weight: 700; color: var(--text-heading); margin: 0 0 6px 0;">Verify Pass Ownership</h1>
+            <p style="font-size: 13.5px; color: var(--text-muted); margin: 0;">Code dispatched to <strong>{{ masked_email }}</strong></p>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 20px; text-align: center; font-size: 13px; color: var(--text-muted);">
+            <i class="fa-regular fa-envelope" style="margin-right: 5px; color: #2563eb;"></i> A secure verification code was sent to the registered email for <strong>{{ user.name }}</strong> ({{ user.roll_no }}). Please enter it below to reveal the pass.
+        </div>
+
+        <form method="POST" action="{{ url_for('find_ticket_verify') }}" id="passOtpForm">
+            <div class="form-group" style="text-align: center;">
+                <label class="form-label" style="text-align: center; margin-bottom: 10px; font-size: 13px; color: var(--text-muted);">
+                    Enter 6-Digit Code
+                </label>
+                <input type="text" name="otp_code" id="otpCodeInput" class="input-clean" placeholder="••••••" maxlength="6" autofocus required
+                       oninput="handleInput(this)"
+                       style="text-align: center; font-size: 28px; font-weight: 700; letter-spacing: 8px; font-family: monospace; height: 52px; max-width: 280px; margin: 0 auto;">
+            </div>
+
+            <div style="text-align: center; font-size: 13px; color: var(--text-muted); margin: 14px 0 20px 0;">
+                <i class="fa-regular fa-clock" style="margin-right: 4px;"></i> Expires in: <strong id="timerDisplay" style="color: var(--text-heading);">05:00</strong>
+            </div>
+
+            <div>
+                <button type="submit" id="submitBtn" class="btn-clean btn-primary-clean" style="width: 100%; padding: 10px; font-size: 14.5px;">
+                    Unlock Admission Pass &rarr;
+                </button>
+            </div>
+        </form>
+
+        <div style="margin-top: 22px; text-align: center; font-size: 13px; color: var(--text-muted); border-top: 1px solid var(--border-subtle); padding-top: 16px;">
+            Didn't receive code? <a href="{{ url_for('find_ticket_resend') }}">Resend Code</a> &bull; <a href="{{ url_for('find_ticket') }}">Search Another Account</a>
+        </div>
+    </div>
+</div>
+
+<script>
+function handleInput(input) {
+    input.value = input.value.replace(/\D/g, '');
+    if (input.value.length === 6) {
+        document.getElementById('submitBtn').innerText = "Verifying...";
+        document.getElementById('passOtpForm').submit();
+    }
+}
+
+let timeLeft = 300;
+const timerElem = document.getElementById('timerDisplay');
+const countdownInterval = setInterval(() => {
+    timeLeft--;
+    if (timeLeft <= 0) {
+        clearInterval(countdownInterval);
+        timerElem.innerText = "EXPIRED";
+        timerElem.style.color = "#b91c1c";
+        document.getElementById('otpCodeInput').disabled = true;
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('submitBtn').innerText = "Code Expired";
+    } else {
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        timerElem.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+}, 1000);
+</script>
+{% endblock %}

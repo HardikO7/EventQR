@@ -1,0 +1,71 @@
+{% extends "wiki_base.html" %}
+
+{% block title %}Verify Login Code — EventPass{% endblock %}
+
+{% block content %}
+<div style="max-width: 440px; margin: 40px auto;">
+    <div class="card-box" style="padding: 32px;">
+        <h1 style="font-size: 22px; font-weight: 700; color: var(--text-heading); margin: 0 0 6px 0; text-align: center;">Enter 6-Digit Code</h1>
+        <p style="font-size: 13.5px; color: var(--text-muted); text-align: center; margin: 0 0 20px 0;">Code dispatched to <strong>{{ email }}</strong></p>
+
+        <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 20px; text-align: center; font-size: 13px; color: var(--text-muted);">
+            <i class="fa-regular fa-envelope" style="margin-right: 5px; color: #2563eb;"></i> A secure verification code has been sent to your email address. Please check your inbox (or spam folder) and enter it below.
+        </div>
+
+        <form method="POST" action="{{ url_for('login_otp_verify') }}" id="otpForm">
+            <input type="hidden" name="email" value="{{ email }}">
+
+            <div class="form-group" style="text-align: center;">
+                <label class="form-label" style="text-align: center; margin-bottom: 10px; font-size: 13px; color: var(--text-muted);">
+                    Type code to automatically sign in
+                </label>
+                <input type="text" name="otp_code" id="otpCodeInput" class="input-clean" placeholder="••••••" maxlength="6" autofocus required
+                       oninput="handleInput(this)"
+                       style="text-align: center; font-size: 28px; font-weight: 700; letter-spacing: 8px; font-family: monospace; height: 52px; max-width: 280px; margin: 0 auto;">
+            </div>
+
+            <div style="text-align: center; font-size: 13px; color: var(--text-muted); margin: 14px 0 20px 0;">
+                <i class="fa-regular fa-clock" style="margin-right: 4px;"></i> Expires in: <strong id="timerDisplay" style="color: var(--text-heading);">05:00</strong>
+            </div>
+
+            <div>
+                <button type="submit" id="submitBtn" class="btn-clean btn-primary-clean" style="width: 100%; padding: 10px; font-size: 14.5px;">
+                    Sign In &rarr;
+                </button>
+            </div>
+        </form>
+
+        <div style="margin-top: 22px; text-align: center; font-size: 13px; color: var(--text-muted); border-top: 1px solid var(--border-subtle); padding-top: 16px;">
+            Didn't receive code? <a href="{{ url_for('login_otp_request') }}">Request a new code</a> &bull; <a href="{{ url_for('login') }}">Password login</a>
+        </div>
+    </div>
+</div>
+
+<script>
+function handleInput(input) {
+    input.value = input.value.replace(/\D/g, '');
+    if (input.value.length === 6) {
+        document.getElementById('submitBtn').innerText = "Signing in...";
+        document.getElementById('otpForm').submit();
+    }
+}
+
+let timeLeft = 300;
+const timerElem = document.getElementById('timerDisplay');
+const countdownInterval = setInterval(() => {
+    timeLeft--;
+    if (timeLeft <= 0) {
+        clearInterval(countdownInterval);
+        timerElem.innerText = "EXPIRED";
+        timerElem.style.color = "#b91c1c";
+        document.getElementById('otpCodeInput').disabled = true;
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('submitBtn').innerText = "Code Expired";
+    } else {
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        timerElem.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+}, 1000);
+</script>
+{% endblock %}

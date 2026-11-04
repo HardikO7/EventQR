@@ -1,0 +1,65 @@
+{% extends "wiki_base.html" %}
+
+{% block title %}Event Moderation & Approvals — EventQR{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+    <div>
+        <h1 class="page-title">Event Moderation & Approvals</h1>
+        <p class="page-subtitle">Review proposed university events submitted by department organizers before publishing them to the student discovery directory.</p>
+    </div>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn-clean btn-clean-secondary">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+{% if pending_events %}
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+        {% for e in pending_events %}
+        <div class="card-box" style="border-left: 4px solid #f59e0b; padding: 20px 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <h3 style="margin: 0 0 6px 0; font-size: 18px; font-weight: 700; color: var(--text-heading);">{{ e.title }}</h3>
+                    <div style="font-size: 13px; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 14px;">
+                        <span><i class="fa-regular fa-user" style="color: var(--text-light); margin-right: 4px;"></i> <strong>Organizer:</strong> {{ e.organizer_name }} ({{ e.organizer_email }})</span>
+                        <span><i class="fa-regular fa-calendar" style="color: var(--text-light); margin-right: 4px;"></i> {{ e.event_date }} at {{ e.event_time }}</span>
+                        <span><i class="fa-solid fa-location-dot" style="color: var(--text-light); margin-right: 4px;"></i> {{ e.venue }}</span>
+                        <span><i class="fa-solid fa-users" style="color: var(--text-light); margin-right: 4px;"></i> <strong>Seats:</strong> {{ e.capacity }}</span>
+                        <span><i class="fa-solid fa-graduation-cap" style="color: var(--text-light); margin-right: 4px;"></i> <strong>Audience:</strong> {{ e.department_restriction }}</span>
+                    </div>
+                </div>
+                <span class="badge-tag badge-warning"><i class="fa-regular fa-clock" style="margin-right: 4px;"></i> Pending Review</span>
+            </div>
+
+            <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13.5px; line-height: 1.6; color: var(--text-body); margin-bottom: 16px;">
+                <div style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Event Proposal & Agenda</div>
+                {{ e.description }}
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+                <!-- Approve Form -->
+                <form method="POST" action="{{ url_for('admin_event_approve', event_id=e.id) }}">
+                    <button type="submit" class="btn-clean btn-clean-success" style="font-size: 13px;">
+                        <i class="fa-solid fa-check"></i> Approve & Publish
+                    </button>
+                </form>
+
+                <!-- Reject Form -->
+                <form method="POST" action="{{ url_for('admin_event_reject', event_id=e.id) }}" style="display: flex; gap: 8px; align-items: center; flex: 1; min-width: 280px;">
+                    <input type="text" name="reason" class="input-clean" placeholder="Optional feedback note (e.g., venue conflict, adjust timing)..." style="font-size: 12.5px; padding: 6px 12px; flex: 1;">
+                    <button type="submit" class="btn-clean btn-clean-danger" style="font-size: 13px; white-space: nowrap;">
+                        <i class="fa-solid fa-xmark"></i> Reject
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card-box" style="padding: 40px; text-align: center; color: var(--text-muted);">
+        <i class="fa-regular fa-circle-check" style="font-size: 38px; color: var(--success-text); margin-bottom: 12px; display: inline-block;"></i>
+        <h3 style="margin: 0 0 6px 0; color: var(--text-heading); font-size: 18px; font-weight: 600;">All Clear</h3>
+        <p style="margin: 0; font-size: 14px;">There are no event proposals pending review at this time. All campus events are up to date.</p>
+    </div>
+{% endif %}
+{% endblock %}

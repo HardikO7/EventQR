@@ -1,0 +1,95 @@
+{% extends "wiki_base.html" %}
+
+{% block title %}All Events Directory — EventPass{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+    <h1 class="page-title">University Events Directory</h1>
+    <p class="page-subtitle">Browse and filter upcoming seminars, orientation ceremonies, hackathons, and campus celebrations.</p>
+</div>
+
+<!-- Filter Bar -->
+<div class="card-box" style="padding: 16px; margin-bottom: 24px; background: #ffffff;">
+    <form method="GET" action="{{ url_for('events_list') }}" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 220px;">
+            <input type="text" name="search" class="input-clean" placeholder="Search by title, agenda, or location..." value="{{ search_query }}">
+        </div>
+        <div style="width: 210px;">
+            <select name="department" class="select-clean">
+                <option value="All Departments" {% if selected_dept == 'All Departments' %}selected{% endif %}>All Departments</option>
+                <option value="Computer Science" {% if selected_dept == 'Computer Science' %}selected{% endif %}>Computer Science</option>
+                <option value="Mechanical Engineering" {% if selected_dept == 'Mechanical Engineering' %}selected{% endif %}>Mechanical Engineering</option>
+                <option value="Management Studies" {% if selected_dept == 'Management Studies' %}selected{% endif %}>Management Studies</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-clean btn-primary-clean">Filter</button>
+        <a href="{{ url_for('events_list') }}" class="btn-clean">Clear</a>
+    </form>
+</div>
+
+<!-- Events Table View -->
+<div class="card-box" style="padding: 0; overflow: hidden;">
+    <table class="table-clean" style="margin: 0;">
+        <thead>
+            <tr>
+                <th>Event</th>
+                <th>Department</th>
+                <th>Schedule</th>
+                <th>Location</th>
+                <th>Availability</th>
+                <th style="text-align: right;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if events %}
+                {% for e in events %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 600; font-size: 14.5px; color: var(--text-heading);">
+                            <a href="{{ url_for('event_detail', event_id=e.id) }}">{{ e.title }}</a>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge-tag badge-neutral">{{ e.department_restriction }}</span>
+                    </td>
+                    <td style="font-size: 13px; color: var(--text-muted);">
+                        {{ e.event_date }} &bull; {{ e.event_time }}
+                    </td>
+                    <td style="font-size: 13px; color: var(--text-muted);">
+                        {{ e.venue }}
+                    </td>
+                    <td>
+                        {% if e.confirmed_count >= e.capacity %}
+                            <span class="badge-tag badge-waitlist">Waitlist ({{ e.waitlist_count }})</span>
+                        {% else %}
+                            <span class="badge-tag badge-open">{{ e.capacity - e.confirmed_count }} seats left</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        {% if session.get('user') and session['user']['role'] == 'organizer' and e.organizer_id == session['user']['id'] %}
+                            <a href="{{ url_for('event_manage', event_id=e.id) }}" class="btn-clean btn-primary-clean" style="padding: 4px 10px; font-size: 12.5px;">
+                                <i class="fa-solid fa-list-check" style="font-size: 11px;"></i> Manage
+                            </a>
+                        {% elif session.get('user') and session['user']['role'] == 'admin' %}
+                            <a href="{{ url_for('event_manage', event_id=e.id) }}" class="btn-clean btn-clean-secondary" style="padding: 4px 10px; font-size: 12.5px;">
+                                <i class="fa-solid fa-gear" style="font-size: 11px;"></i> Oversee
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('event_detail', event_id=e.id) }}" class="btn-clean" style="padding: 4px 12px; font-size: 13px;">
+                                Details &rarr;
+                            </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 36px;">
+                        No events matched your current search filters.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "wiki_base.html" %}
+
+{% block title %}User Directory & Access — EventQR{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+    <div>
+        <h1 class="page-title">User Directory & Permissions</h1>
+        <p class="page-subtitle">Manage campus student profiles, faculty organizers, role privileges, and account activation states.</p>
+    </div>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn-clean btn-clean-secondary">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+<!-- Search & Role Filter Bar -->
+<div class="card-box" style="padding: 16px 20px; margin-bottom: 24px;">
+    <form method="GET" action="{{ url_for('admin_users') }}" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+        <div style="flex: 1; min-width: 240px;">
+            <label class="label-clean">Search Directory</label>
+            <input type="text" name="search" class="input-clean" placeholder="Search by name, email, roll number, or department..." value="{{ search_query }}">
+        </div>
+        <div style="width: 200px;">
+            <label class="label-clean">Filter Role</label>
+            <select name="role" class="select-clean">
+                <option value="all" {% if selected_role == 'all' %}selected{% endif %}>All Roles</option>
+                <option value="student" {% if selected_role == 'student' %}selected{% endif %}>Students</option>
+                <option value="organizer" {% if selected_role == 'organizer' %}selected{% endif %}>Organizers / Faculty</option>
+                <option value="admin" {% if selected_role == 'admin' %}selected{% endif %}>Administrators</option>
+            </select>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button type="submit" class="btn-clean btn-clean-primary">
+                <i class="fa-solid fa-magnifying-glass"></i> Filter
+            </button>
+            <a href="{{ url_for('admin_users') }}" class="btn-clean btn-clean-secondary">Reset</a>
+        </div>
+    </form>
+</div>
+
+<!-- Users Table -->
+<div class="card-box" style="padding: 0; overflow: hidden;">
+    <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-weight: 600; font-size: 14px; color: var(--text-heading);">
+            Registered Campus Users ({{ users|length }})
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted);">
+            Changes to user roles take effect immediately
+        </div>
+    </div>
+    
+    <div style="overflow-x: auto;">
+        <table class="table-clean" style="margin: 0;">
+            <thead>
+                <tr>
+                    <th style="width: 45px;">#</th>
+                    <th>User Details</th>
+                    <th>Roll / Reg No</th>
+                    <th>Department</th>
+                    <th>Role Privileges</th>
+                    <th>Account Status</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td style="color: var(--text-light); font-size: 13px;">{{ loop.index }}</td>
+                    <td>
+                        <div style="font-weight: 600; color: var(--text-heading); display: flex; align-items: center; gap: 6px;">
+                            {{ u.name }}
+                            {% if u.is_verified %}
+                                <span title="Email OTP Verified" style="color: #047857; font-size: 13px;"><i class="fa-solid fa-circle-check"></i></span>
+                            {% endif %}
+                        </div>
+                        <div style="font-size: 12.5px; color: var(--text-muted);">{{ u.email }}</div>
+                    </td>
+                    <td>
+                        <span style="font-family: monospace; font-size: 12.5px; background: var(--bg-page); padding: 3px 6px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+                            {{ u.roll_no or '—' }}
+                        </span>
+                    </td>
+                    <td style="font-size: 13.5px;">{{ u.department or '—' }}</td>
+                    <td>
+                        <!-- Inline Role Changer Form -->
+                        <form method="POST" action="{{ url_for('admin_user_role', user_id=u.id) }}" style="display: inline-block;">
+                            <select name="role" onchange="this.form.submit()" class="select-clean" style="font-size: 12.5px; padding: 4px 8px; width: auto; font-weight: 500;">
+                                <option value="student" {% if u.role == 'student' %}selected{% endif %}>Student</option>
+                                <option value="organizer" {% if u.role == 'organizer' %}selected{% endif %}>Organizer</option>
+                                <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Administrator</option>
+                            </select>
+                        </form>
+                    </td>
+                    <td>
+                        {% if u.is_active %}
+                            <span class="badge-tag badge-success">Active</span>
+                        {% else %}
+                            <span class="badge-tag badge-danger">Suspended</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        <form method="POST" action="{{ url_for('admin_user_toggle', user_id=u.id) }}" style="display: inline;">
+                            {% if u.is_active %}
+                                <button type="submit" class="btn-clean btn-clean-danger" style="font-size: 12px; padding: 4px 10px;">
+                                    Suspend
+                                </button>
+                            {% else %}
+                                <button type="submit" class="btn-clean btn-clean-success" style="font-size: 12px; padding: 4px 10px;">
+                                    Activate
+                                </button>
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
