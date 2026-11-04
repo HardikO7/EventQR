@@ -16,6 +16,16 @@ import qr_service
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# Auto-initialize database on fresh cloud instances if database file is missing
+if Config.DB_TYPE in ("sqlite", "auto"):
+    if not Config.SQLITE_PATH.exists() or Config.SQLITE_PATH.stat().st_size == 0:
+        try:
+            import init_db
+            init_db.setup_database()
+            print("[CLOUD INIT] Database auto-initialized successfully.")
+        except Exception as e:
+            print(f"[CLOUD INIT WARNING] Could not auto-initialize DB: {e}")
+
 # ==============================================================================
 # Auth & Role Decorators
 # ==============================================================================
@@ -928,9 +938,10 @@ def admin_eligibility():
 # ==============================================================================
 
 if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
     print("=" * 65)
     print(" EventPass Campus Event Management Platform")
     print(" Real-Time QR Gate Scanning & Capacity Engine")
-    print(" Server Running at: http://127.0.0.1:5000")
+    print(f" Server Running at: http://127.0.0.1:{port}")
     print("=" * 65)
-    app.run(debug=True, port=5000)
+    app.run(host="0.0.0.0", port=port, debug=False)
