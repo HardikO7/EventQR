@@ -71,9 +71,9 @@ def create_and_send_otp(email, purpose="registration", user_name="Student"):
     </html>
     """
 
-    # Dispatch via email service
+    # Dispatch via non-blocking async email thread
     import email_service
-    email_service.send_raw_email(email.strip().lower(), subject, html_content)
+    email_service.send_email_async(email.strip().lower(), subject, html_content)
 
     return otp_code
 

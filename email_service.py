@@ -1,5 +1,6 @@
 import smtplib
 import os
+import threading
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
@@ -7,6 +8,15 @@ from email.header import Header
 from datetime import datetime
 from pathlib import Path
 from config import Config
+
+def send_email_async(to_email, subject, html_content, attachments=None):
+    """
+    Non-blocking background thread dispatcher.
+    Prevents the web UI from freezing while waiting for Google SMTP TLS handshakes.
+    """
+    thread = threading.Thread(target=send_raw_email, args=(to_email, subject, html_content, attachments))
+    thread.daemon = True
+    thread.start()
 
 def send_raw_email(to_email, subject, html_content, attachments=None):
     """
@@ -134,7 +144,8 @@ def send_ticket_email(guest_name, to_email, roll_no, department, token, qr_image
     """
 
     attachments = [ticket_file_path] if ticket_file_path.exists() else []
-    return send_raw_email(to_email, subject, html_content, attachments=attachments)
+    send_email_async(to_email, subject, html_content, attachments=attachments)
+    return {"success": True, "mode": "Async Queued", "error": None}
 
 def send_waitlist_email(guest_name, to_email, event_title, waitlist_pos):
     """Notify student that they are queued on the event waitlist"""
@@ -163,9 +174,11 @@ def send_waitlist_email(guest_name, to_email, event_title, waitlist_pos):
     </body>
     </html>
     """
-    return send_raw_email(to_email, subject, html_content)
+    send_email_async(to_email, subject, html_content)
+    return {"success": True, "mode": "Async Queued", "error": None}
 
 def send_waitlist_promotion_email(guest_name, to_email, event_title, token, qr_image_path):
     """Notify student that they have been promoted from the waitlist to confirmed!"""
     subject = f"🎉 Seat Confirmed! Promoted from Waitlist: {event_title}"
+    return send_ticket_email(guest_name, to_email, "Student", "University", token, qr_image_path, event_title)
     return send_ticket_email(guest_name, to_email, "Student", "University", token, qr_image_path, event_title)
