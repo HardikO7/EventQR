@@ -58,6 +58,8 @@ ENV/
 ~$*.doc
 ~$*.pptx
 ~$*.xlsx
+EventQR_Comprehensive_Project_Report.docx
+EventQR_Comprehensive_Project_Report.pdf
 EventQR_Comprehensive_Project_Report_Updated.docx
 
 # Scratch testing & experiment scripts
