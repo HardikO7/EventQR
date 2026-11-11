@@ -23,8 +23,8 @@
         </div>
 
         <div style="display: flex; gap: 8px;">
-            {% if guest.qr_image_path %}
-            <a href="{{ url_for('static', filename=guest.qr_image_path) }}" download class="btn-clean btn-primary-clean" style="font-size: 13px;">
+            {% if guest.qr_token %}
+            <a href="{{ url_for('ticket_image', token=guest.qr_token, download=1) }}" download="eventpass_{{ guest.qr_token[:8] }}.png" class="btn-clean btn-primary-clean" style="font-size: 13px;">
                 <i class="fa-solid fa-download" style="font-size: 12px;"></i> Download
             </a>
             {% endif %}
@@ -35,9 +35,9 @@
     </div>
 
     <!-- Pass Graphic -->
-    {% if guest.qr_image_path %}
+    {% if guest.qr_token %}
     <div class="card-box" style="padding: 16px; text-align: center; margin-bottom: 20px;">
-        <img src="{{ url_for('static', filename=guest.qr_image_path) }}" alt="QR Ticket Pass" style="max-width: 100%; height: auto; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+        <img src="{{ url_for('ticket_image', token=guest.qr_token) }}" alt="QR Ticket Pass" style="max-width: 100%; height: auto; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
     </div>
     {% endif %}
 
